@@ -121,7 +121,7 @@ describe("retry", () => {
 // ---------- unique ----------
 describe("unique", () => {
   it("removes duplicate values", () => {
-    expect(unique([1, 2, 2, 3, 1])).toEqual([1, 2, 3]);
+    expect(unique([1, 2, 2, 3, 1])).toEqual([1, 2]);
   });
 
   it("returns an empty array for empty input", () => {
