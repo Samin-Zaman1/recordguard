@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
- "scripts": {
-  "test": "vitest run",
-  "coverage": "vitest run --coverage"
-},
+  "scripts": {
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "e2e": "playwright test"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@rolldown/binding-win32-x64-msvc": "^1.2.12",
     "@vitest/coverage-v8": "^5.0.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
