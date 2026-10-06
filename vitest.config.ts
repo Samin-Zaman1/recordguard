@@ -3,10 +3,19 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     coverage: {
-      provider: "v8",                   // use the v8 tool we installed
-      include: ["src/**/*.ts"],         // measure only our source files
-      exclude: ["src/**/*.test.ts"],    // don't measure the tests themselves
-      reporter: ["text", "html"],       // table in terminal + browsable report
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.test.ts"],
+      reporter: ["text", "html"],
+
+      // if ANY of these numbers falls below the limit,
+      // the command exits with an error (and CI would go red)
+      thresholds: {
+        statements: 90,  // % of statements that ran
+        branches: 90,    // % of if/else paths that ran
+        functions: 90,   // % of functions that were called
+        lines: 90,       // % of lines that ran
+      },
     },
   },
 });

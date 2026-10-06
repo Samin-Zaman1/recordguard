@@ -1,7 +1,7 @@
 // describe = groups tests, it = one test, expect = an assertion
 // vi = Vitest's toolbox for mocks
 import { describe, it, expect, vi } from "vitest";
-import { sleep, isValidEmail, groupBy, retry, unique } from "./utils.js";
+import { sleep, isValidEmail, groupBy, retry, unique, double } from "./utils.js";
 
 // ---------- sleep ----------
 describe("sleep", () => {
@@ -126,5 +126,16 @@ describe("unique", () => {
 
   it("returns an empty array for empty input", () => {
     expect(unique([])).toEqual([]);
+  });
+});
+
+// in utils.test.ts (add double to the import line)
+describe("double", () => {
+  it("doubles small numbers", () => {
+    expect(double(4)).toBe(8);
+  });
+
+  it("returns large numbers unchanged", () => {
+    expect(double(150)).toBe(150);
   });
 });
