@@ -1,6 +1,6 @@
-import type { LoadResult, User } from "./types";
-import { groupBy, retry } from "./utils";
-import { isUser } from "./validate";
+import type { LoadResult, User } from "./types.js";
+import { groupBy, retry } from "./utils.js";
+import { isUser } from "./validate.js";
 
 export class UserService {
   // "private readonly" in the constructor creates a property AND assigns it

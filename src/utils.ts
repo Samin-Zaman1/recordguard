@@ -102,3 +102,9 @@ export async function retry<T>(
 export function unique<T>(items: T[]): T[] {
   return [...new Set(items)];
 }
+
+// a function nobody tests
+export function double(n: number): number {
+  if (n > 100) return n; // a branch nobody tests either
+  return n * 2;
+}
