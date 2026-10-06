@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { UserService } from "./userService";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { UserService } from "./userService.js";
 
 // test data: two good users and two bad records
 const admin = { id: 1, email: "a@x.com", role: "admin" };
@@ -9,10 +9,11 @@ const badRole = { id: 4, email: "d@x.com", role: "manager" };
 
 describe("UserService", () => {
   // the fake fetch function; recreated before every test
-  let fetchUsers: ReturnType<typeof vi.fn>;
+  // typed with the same signature UserService expects
+  let fetchUsers: Mock<() => Promise<unknown[]>>;
 
   beforeEach(() => {
-    fetchUsers = vi.fn();
+    fetchUsers = vi.fn<() => Promise<unknown[]>>();
   });
 
   it("returns valid users and separates invalid ones", async () => {

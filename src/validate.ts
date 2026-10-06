@@ -1,5 +1,5 @@
-import type { User } from "./types";
-import { isValidEmail } from "./utils";
+import type { User } from "./types.js";
+import { isValidEmail } from "./utils.js";
 
 // unknown in, "value is User" out (type guard)
 // true means TypeScript can treat the value as a User

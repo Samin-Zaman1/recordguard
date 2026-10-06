@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isUser } from "./validate";
+import { isUser } from "./validate.js";
 
 describe("isUser", () => {
   it("accepts a valid user", () => {

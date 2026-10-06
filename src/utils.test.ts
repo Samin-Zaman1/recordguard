@@ -1,7 +1,7 @@
 // describe = groups tests, it = one test, expect = an assertion
 // vi = Vitest's toolbox for mocks
 import { describe, it, expect, vi } from "vitest";
-import { sleep, isValidEmail, groupBy, retry, unique } from "./utils";
+import { sleep, isValidEmail, groupBy, retry, unique } from "./utils.js";
 
 // ---------- sleep ----------
 describe("sleep", () => {
