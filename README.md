@@ -1,43 +1,131 @@
-# TypeScript Testing Fundamentals
+# recordsift
 
-[![CI](https://github.com/Samin-Zaman1/typescript-testing-fundamentals/actions/workflows/ci.yml/badge.svg)](https://github.com/Samin-Zaman1/typescript-testing-fundamentals/actions/workflows/ci.yml)
+[![CI](https://github.com/Samin-Zaman1/recordsift/actions/workflows/ci.yml/badge.svg)](https://github.com/Samin-Zaman1/recordsift/actions/workflows/ci.yml)
 
-A small TypeScript codebase written test-first with [Vitest](https://vitest.dev): generic utilities, runtime validation of untrusted data, and a user service with retry logic, plus a [Playwright](https://playwright.dev) browser test. CI on GitHub Actions enforces 90% coverage, and `main` only accepts changes through pull requests that pass it.
+Load data from an API with retries, validate every record at runtime, and get back `{ valid, invalid }`, instead of crashing on the first bad record or silently dropping it.
 
-## What's here
+Works with a plain TypeScript type guard or any [Standard Schema](https://standardschema.dev) validator: Zod, Valibot, ArkType and others, with no adapter. Zero runtime dependencies.
 
-| Module | What it does | What the tests cover |
+```ts
+import { loadAndSift } from "recordsift";
+import { z } from "zod";
+
+const User = z.object({ id: z.number().int(), email: z.email() });
+
+const { valid, invalid } = await loadAndSift({
+  load: () => fetch("https://api.example.com/users").then((r) => r.json()),
+  validate: User,
+});
+
+valid;   // { id: number; email: string }[], typed from the schema
+invalid; // [{ index: 3, value: {...}, issues: [{ message: "Invalid email address", path: ["email"] }] }]
+```
+
+## Why
+
+Data from APIs, files and queues can't be trusted. The usual options are both bad:
+
+- **Validate the whole array at once:** one malformed record fails the entire batch.
+- **Filter out what doesn't match:** bad records vanish, and nobody finds out the upstream system is broken.
+
+recordsift keeps the good records and returns every bad one with its position and the exact reasons it failed, so you can log, alert, or repair them.
+
+## Install
+
+```bash
+npm install recordsift
+```
+
+Requires Node 22 or later. ESM only.
+
+## Usage
+
+### `sift(records, validator)`
+
+Splits an array you already have. Order is preserved in both lists.
+
+```ts
+import { sift } from "recordsift";
+
+function isUser(value: unknown): value is User { /* ... */ }
+
+const { valid, invalid } = sift(rows, isUser);
+// invalid: [{ index: 1, value: { id: "2" }, issues: [{ message: "Rejected by isUser" }] }]
+```
+
+With a schema, `valid` holds the schema's **output**, so transforms and defaults are applied.
+
+### `siftAsync(records, validator)`
+
+Same as `sift`, for schemas with async checks (for example a Zod `.refine(async ...)` that looks something up). `sift` throws a `TypeError` pointing here if it meets one.
+
+### `loadAndSift(options)`
+
+Loads, retries on failure, then sifts.
+
+| Option | Default | |
 | --- | --- | --- |
-| `src/utils.ts` | `isValidEmail`, `groupBy`, `retry`, `unique`, `sleep` | valid and invalid inputs, empty arrays, ordering inside groups, retry success / failure / bad arguments |
-| `src/validate.ts` | `isUser` type guard that checks an `unknown` value is a real `User` | valid users, wrong types, missing fields, roles outside the allowed set |
-| `src/userService.ts` | `UserService` loads users through an injected fetch function, retries failures, and separates valid from invalid records | mixed good and bad records, a failure followed by success, every attempt failing, an empty response, grouping by role |
+| `load` | required | Function returning the records (sync or async). Must resolve to an array. |
+| `validate` | required | Type guard or Standard Schema. |
+| `attempts` | `3` | Total tries, including the first. |
+| `delayMs` | `100` | Wait before the first retry. |
+| `backoff` | `2` | Multiplier per retry: 100, 200, 400 ms ... Use `1` for a fixed delay. |
+| `shouldRetry` | always | `(error, attempt) => boolean`. Return `false` to stop, e.g. on a 404. |
+| `signal` | none | `AbortSignal` to cancel, including while waiting between retries. |
 
-29 unit tests across 3 files, plus an end-to-end test in `e2e/todo.spec.ts` that drives a real browser through the [TodoMVC demo app](https://demo.playwright.dev/todomvc). Playwright only looks in `e2e/` and Vitest only in `src/`, so neither runner picks up the other's tests.
+If every attempt fails, the last error is rethrown unchanged. If `load` succeeds but returns something other than an array, it fails immediately with a `TypeError` and is **not** retried: that's a contract problem, not a temporary one.
 
-## Testing approach
+### `retry(fn, options)`
 
-- **Untrusted data is typed `unknown` until proven otherwise.** `isUser` and `isValidEmail` are type guards, so the compiler only allows a value to be used as a `User` after the runtime check passes.
-- **Invalid records are reported, not hidden.** `loadUsers` returns `{ valid, invalid }`, so callers and tests can see exactly what was rejected.
-- **Dependencies are injected so they can be mocked.** `UserService` takes its fetch function and retry settings in the constructor. Tests pass a typed `vi.fn()` and script failures with `mockRejectedValueOnce` to exercise the retry path without a network.
-- **Edge cases are table-driven.** `isUser` is checked against seven kinds of bad input (null, wrong types, missing or fractional id, bad email, unknown role) with a single `it.each` table.
-- **Tests stay fast.** Retry delays are set to 1 ms in tests instead of the 100 ms default.
-- **Coverage is a gate, not a report.** `vitest.config.ts` sets 90% thresholds for statements, branches, functions and lines, and the run fails below them.
+The retry logic on its own, with the same options as above.
 
-## CI and workflow
+## Behaviour you can rely on
 
-- `.github/workflows/ci.yml` runs two jobs in parallel on every pull request and every push to `main`:
-  - `test` runs the unit tests with coverage and uploads the HTML coverage report as an artifact.
-  - `e2e` installs Chromium and runs the Playwright tests, uploading traces and screenshots if a test fails.
-- A repository ruleset on `main` requires a pull request with passing `test` and `e2e` checks, and blocks force pushes and deletion. A pull request with a failing test cannot be merged.
+- **One bad record never sinks the batch.** If a validator throws on a record, that record is rejected with `Validator threw: <message>` and the rest carry on.
+- **Nothing is dropped silently.** Every input record ends up in exactly one of `valid` or `invalid`.
+- **Issue paths are plain keys.** Schema path segments are flattened, so `path` is always something like `["address", "postcode"]`.
+- **Types follow the validator.** `valid` is typed from the type guard or the schema's output type.
 
-## Run locally
+## Example
+
+`npm run example` runs [`examples/users.ts`](examples/users.ts) against an API stub that fails twice and then returns a mix of good and bad users:
+
+```
+Load failed on attempt 1, retrying...
+Load failed on attempt 2, retrying...
+
+Loaded after 3 attempts: 2 valid, 2 rejected
+
+  ok        #1 ada@example.com (admin)
+  ok        #3 grace@example.com (customer)
+  rejected  record 1: email: Invalid email address
+  rejected  record 3: id: Invalid input: expected int, received number; role: Invalid option: expected one of "admin"|"customer"
+```
+
+## How it's tested
+
+| Layer | Where | What it proves |
+| --- | --- | --- |
+| Unit | `src/*.test.ts` (Vitest) | Sifting with type guards and schemas, issue paths, throwing and async validators, exact backoff timing (fake timers), `shouldRetry`, cancellation mid-wait and mid-attempt, option validation |
+| Interop | `src/zod.test.ts` | A real Zod schema works unmodified: inferred types, issue paths, defaults, async refinements |
+| Package | `e2e/package.test.ts` | Builds and `npm pack`s the library, installs the tarball into an empty project, then uses it from JavaScript against a local HTTP server that fails before it succeeds, and from TypeScript to check the published types |
+| Types | `expectTypeOf` + `@ts-expect-error` | `valid` is inferred correctly and wrong usages fail to compile |
+
+- **100% coverage**, with a 90% minimum enforced in CI.
+- **The package test checks what users install, not the source.** It confirms the tarball contains the build and types and leaves out tests. Breaking the `exports` path in `package.json` makes it fail.
+- **CI** runs typecheck, unit tests with coverage and a build, plus the package test on Node 22 and 24. `main` only accepts pull requests that pass.
+
+## Development
 
 ```bash
 npm ci
-npm test                        # run the unit tests
-npm run coverage                # run with coverage and enforce the thresholds
-npx playwright install chromium # one-time browser download
-npm run e2e                     # run the end-to-end tests
+npm test            # unit tests
+npm run coverage    # with coverage thresholds
+npm run typecheck   # library, tests, example and package test
+npm run e2e         # build, pack, install and use the real package
+npm run example     # the example above
 ```
 
-Requires Node 22 or later.
+## License
+
+MIT

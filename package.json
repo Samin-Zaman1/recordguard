@@ -1,22 +1,61 @@
 {
-  "name": "ts-practice",
-  "version": "1.0.0",
-  "description": "TypeScript testing practice: Vitest unit tests, Playwright e2e and CI",
-  "main": "index.js",
-  "scripts": {
-    "test": "vitest run",
-    "coverage": "vitest run --coverage",
-    "e2e": "playwright test"
-  },
-  "keywords": [],
+  "name": "recordsift",
+  "version": "0.1.0",
+  "description": "Load data from an API with retries and validate every record at runtime. Returns { valid, invalid } instead of crashing on bad records. Works with type guards, Zod, Valibot and ArkType.",
+  "keywords": [
+    "validation",
+    "runtime-validation",
+    "type-guard",
+    "standard-schema",
+    "zod",
+    "valibot",
+    "arktype",
+    "retry",
+    "backoff",
+    "api",
+    "typescript"
+  ],
   "author": "Samin Zaman",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Samin-Zaman1/recordsift.git"
+  },
+  "homepage": "https://github.com/Samin-Zaman1/recordsift#readme",
+  "bugs": "https://github.com/Samin-Zaman1/recordsift/issues",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "e2e": "vitest run --config vitest.e2e.config.ts",
+    "example": "tsx examples/users.ts",
+    "prepublishOnly": "npm run typecheck && npm run coverage && npm run build"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.19.1",
     "@vitest/coverage-v8": "^5.0.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "zod": "^4.6.5"
   }
 }
