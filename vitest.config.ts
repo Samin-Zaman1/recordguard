@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // only run unit tests inside src; Playwright owns the e2e folder
+    // unit tests only; the package test in e2e/ has its own config (vitest.e2e.config.ts)
     include: ["src/**/*.test.ts"],
 
     coverage: {

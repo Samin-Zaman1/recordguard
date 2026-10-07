@@ -16,14 +16,20 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Run tests with coverage
         run: npm run coverage
+
+      - name: Build
+        run: npm run build
 
       - name: Upload coverage report
         if: always()
@@ -32,8 +38,15 @@ jobs:
           name: coverage-report
           path: coverage/
 
-  e2e:
+  # Packs the library, installs the tarball into an empty project and uses it
+  # from JavaScript and TypeScript, on every supported Node version.
+  package:
+    name: package (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
 
     steps:
       - name: Checkout code
@@ -42,21 +55,20 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run e2e tests
+      - name: Test the packed package
         run: npm run e2e
 
-      - name: Upload Playwright results
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-results
-          path: test-results/
+  # Single required check for branch protection, whatever the matrix holds.
+  e2e:
+    needs: package
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All package tests passed
+        run: test "${{ needs.package.result }}" = "success"

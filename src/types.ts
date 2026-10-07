@@ -1,17 +1,28 @@
-// The two roles allowed in our system
-// A union type: anything else is a compile error
-export type Role = "admin" | "customer";
+import type { StandardSchemaV1 } from "./standard-schema.js";
 
-// The CLEAN shape. Only validated data should ever have this type
-export interface User {
-  id: number;
-  email: string;
-  role: Role;
+// A type guard: returns true when the value is a T, and TypeScript narrows it.
+export type TypeGuard<T> = (value: unknown) => value is T;
+
+// Anything recordsift can validate with: a hand-written type guard, or a
+// Standard Schema (Zod, Valibot, ArkType, ...).
+export type Validator<T> = TypeGuard<T> | StandardSchemaV1<unknown, T>;
+
+// Why a record was rejected. Schema issues are passed through with their
+// paths flattened to plain keys, e.g. { message: "Invalid email", path: ["email"] }.
+export interface SiftIssue {
+  readonly message: string;
+  readonly path?: readonly PropertyKey[];
 }
 
-// Result of loading users: good records AND the rejected ones
-// Returning rejects (not hiding them) lets callers and tests see what went wrong
-export interface LoadResult {
-  valid: User[];
-  invalid: unknown[]; // unknown because we couldn't trust their shape
+// A rejected record, kept rather than dropped so callers can log, report or
+// repair it. index is its position in the input array.
+export interface InvalidRecord {
+  readonly index: number;
+  readonly value: unknown;
+  readonly issues: readonly SiftIssue[];
+}
+
+export interface SiftResult<T> {
+  readonly valid: T[];
+  readonly invalid: InvalidRecord[];
 }
