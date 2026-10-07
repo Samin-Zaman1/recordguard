@@ -1,17 +1,19 @@
 {
   "name": "ts-practice",
   "version": "1.0.0",
-  "description": "",
+  "description": "TypeScript testing practice: Vitest unit tests, Playwright e2e and CI",
   "main": "index.js",
- "scripts": {
-  "test": "vitest run",
-  "coverage": "vitest run --coverage"
-},
+  "scripts": {
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "e2e": "playwright test"
+  },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Samin Zaman",
+  "license": "MIT",
   "type": "module",
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@vitest/coverage-v8": "^5.0.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
