@@ -1,18 +1,20 @@
-# recordsift
+# RecordGuard
 
-[![CI](https://github.com/Samin-Zaman1/recordsift/actions/workflows/ci.yml/badge.svg)](https://github.com/Samin-Zaman1/recordsift/actions/workflows/ci.yml)
+**Stop bad API data before it reaches your app.**
 
-Load data from an API with retries, validate every record at runtime, and get back `{ valid, invalid }`, instead of crashing on the first bad record or silently dropping it.
+[![CI](https://github.com/Samin-Zaman1/recordguard/actions/workflows/ci.yml/badge.svg)](https://github.com/Samin-Zaman1/recordguard/actions/workflows/ci.yml)
+
+RecordGuard loads data from an API with retries, checks every record at runtime, and gives you back the good records and the bad ones separately: `{ valid, invalid }`. Your app no longer crashes on the first bad record, and bad records are no longer silently dropped.
 
 Works with a plain TypeScript type guard or any [Standard Schema](https://standardschema.dev) validator: Zod, Valibot, ArkType and others, with no adapter. Zero runtime dependencies.
 
 ```ts
-import { loadAndSift } from "recordsift";
+import { loadAndGuard } from "recordguard";
 import { z } from "zod";
 
 const User = z.object({ id: z.number().int(), email: z.email() });
 
-const { valid, invalid } = await loadAndSift({
+const { valid, invalid } = await loadAndGuard({
   load: () => fetch("https://api.example.com/users").then((r) => r.json()),
   validate: User,
 });
@@ -28,40 +30,40 @@ Data from APIs, files and queues can't be trusted. The usual options are both ba
 - **Validate the whole array at once:** one malformed record fails the entire batch.
 - **Filter out what doesn't match:** bad records vanish, and nobody finds out the upstream system is broken.
 
-recordsift keeps the good records and returns every bad one with its position and the exact reasons it failed, so you can log, alert, or repair them.
+RecordGuard keeps the good records and returns every bad one with its position and the exact reasons it failed, so you can log, alert, or repair them.
 
 ## Install
 
 ```bash
-npm install recordsift
+npm install recordguard
 ```
 
 Requires Node 22 or later. ESM only.
 
 ## Usage
 
-### `sift(records, validator)`
+### `guard(records, validator)`
 
 Splits an array you already have. Order is preserved in both lists.
 
 ```ts
-import { sift } from "recordsift";
+import { guard } from "recordguard";
 
 function isUser(value: unknown): value is User { /* ... */ }
 
-const { valid, invalid } = sift(rows, isUser);
+const { valid, invalid } = guard(rows, isUser);
 // invalid: [{ index: 1, value: { id: "2" }, issues: [{ message: "Rejected by isUser" }] }]
 ```
 
 With a schema, `valid` holds the schema's **output**, so transforms and defaults are applied.
 
-### `siftAsync(records, validator)`
+### `guardAsync(records, validator)`
 
-Same as `sift`, for schemas with async checks (for example a Zod `.refine(async ...)` that looks something up). `sift` throws a `TypeError` pointing here if it meets one.
+Same as `guard`, for schemas with async checks (for example a Zod `.refine(async ...)` that looks something up). `guard` throws a `TypeError` pointing here if it meets one.
 
-### `loadAndSift(options)`
+### `loadAndGuard(options)`
 
-Loads, retries on failure, then sifts.
+Loads, retries on failure, then checks.
 
 | Option | Default | |
 | --- | --- | --- |
@@ -106,7 +108,7 @@ Loaded after 3 attempts: 2 valid, 2 rejected
 
 | Layer | Where | What it proves |
 | --- | --- | --- |
-| Unit | `src/*.test.ts` (Vitest) | Sifting with type guards and schemas, issue paths, throwing and async validators, exact backoff timing (fake timers), `shouldRetry`, cancellation mid-wait and mid-attempt, option validation |
+| Unit | `src/*.test.ts` (Vitest) | Checking with type guards and schemas, issue paths, throwing and async validators, exact backoff timing (fake timers), `shouldRetry`, cancellation mid-wait and mid-attempt, option validation |
 | Interop | `src/zod.test.ts` | A real Zod schema works unmodified: inferred types, issue paths, defaults, async refinements |
 | Package | `e2e/package.test.ts` | Builds and `npm pack`s the library, installs the tarball into an empty project, then uses it from JavaScript against a local HTTP server that fails before it succeeds, and from TypeScript to check the published types |
 | Types | `expectTypeOf` + `@ts-expect-error` | `valid` is inferred correctly and wrong usages fail to compile |

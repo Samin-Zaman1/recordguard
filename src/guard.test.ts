@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { sift, siftAsync } from "./sift.js";
+import { guard, guardAsync } from "./guard.js";
 import type { StandardSchemaV1 } from "./standard-schema.js";
 
 interface User {
@@ -24,11 +24,11 @@ function schema<T>(
 const ada = { id: 1, email: "ada@example.com" };
 const grace = { id: 2, email: "grace@example.com" };
 
-describe("sift with a type guard", () => {
+describe("guard with a type guard", () => {
   it("splits records into valid and invalid, keeping order", () => {
     const records = [ada, { id: "2" }, grace, null];
 
-    const result = sift(records, isUser);
+    const result = guard(records, isUser);
 
     expect(result.valid).toEqual([ada, grace]);
     expect(result.invalid).toEqual([
@@ -38,17 +38,17 @@ describe("sift with a type guard", () => {
   });
 
   it("narrows valid records to the guarded type", () => {
-    const { valid } = sift([ada], isUser);
+    const { valid } = guard([ada], isUser);
     expectTypeOf(valid).toEqualTypeOf<User[]>();
   });
 
   it("names an anonymous guard generically", () => {
-    const { invalid } = sift([1], ((v: unknown) => v === "x") as (v: unknown) => v is "x");
+    const { invalid } = guard([1], ((v: unknown) => v === "x") as (v: unknown) => v is "x");
     expect(invalid[0]?.issues).toEqual([{ message: "Rejected by validator" }]);
   });
 
   it("returns two empty lists for no records", () => {
-    expect(sift([], isUser)).toEqual({ valid: [], invalid: [] });
+    expect(guard([], isUser)).toEqual({ valid: [], invalid: [] });
   });
 
   it("rejects only the record whose validation throws, not the whole batch", () => {
@@ -57,7 +57,7 @@ describe("sift with a type guard", () => {
       return typeof value === "number";
     };
 
-    const result = sift([1, 2, 3], explodesOnTwo);
+    const result = guard([1, 2, 3], explodesOnTwo);
 
     expect(result.valid).toEqual([1, 3]);
     expect(result.invalid).toEqual([{ index: 1, value: 2, issues: [{ message: "Validator threw: boom" }] }]);
@@ -67,11 +67,11 @@ describe("sift with a type guard", () => {
     const throwsString = (_: unknown): _ is never => {
       throw "bad input";
     };
-    expect(sift([1], throwsString).invalid[0]?.issues).toEqual([{ message: "Validator threw: bad input" }]);
+    expect(guard([1], throwsString).invalid[0]?.issues).toEqual([{ message: "Validator threw: bad input" }]);
   });
 });
 
-describe("sift with a Standard Schema", () => {
+describe("guard with a Standard Schema", () => {
   const positive = schema<number>((value) =>
     typeof value === "number" && value > 0
       ? { value }
@@ -79,7 +79,7 @@ describe("sift with a Standard Schema", () => {
   );
 
   it("passes issues through with path segments flattened to keys", () => {
-    const result = sift([5, -1], positive);
+    const result = guard([5, -1], positive);
 
     expect(result.valid).toEqual([5]);
     expect(result.invalid).toEqual([
@@ -89,31 +89,31 @@ describe("sift with a Standard Schema", () => {
 
   it("omits path when the schema gives none", () => {
     const noPath = schema<never>(() => ({ issues: [{ message: "Nope" }] }));
-    expect(sift(["x"], noPath).invalid[0]?.issues).toEqual([{ message: "Nope" }]);
+    expect(guard(["x"], noPath).invalid[0]?.issues).toEqual([{ message: "Nope" }]);
   });
 
   it("returns the schema's output, so transforms apply", () => {
     const trimmed = schema<string>((value) =>
       typeof value === "string" ? { value: value.trim() } : { issues: [{ message: "Expected a string" }] },
     );
-    expect(sift(["  hi  "], trimmed).valid).toEqual(["hi"]);
+    expect(guard(["  hi  "], trimmed).valid).toEqual(["hi"]);
   });
 
-  it("refuses an async schema and points to siftAsync", () => {
+  it("refuses an async schema and points to guardAsync", () => {
     const asyncSchema = schema<number>(async (value) => ({ value: value as number }));
-    expect(() => sift([1], asyncSchema)).toThrow(new TypeError(
-      "This schema validates asynchronously; use siftAsync() instead of sift().",
+    expect(() => guard([1], asyncSchema)).toThrow(new TypeError(
+      "This schema validates asynchronously; use guardAsync() instead of guard().",
     ));
   });
 });
 
-describe("siftAsync", () => {
+describe("guardAsync", () => {
   it("awaits async schemas", async () => {
     const evenAsync = schema<number>(async (value) =>
       typeof value === "number" && value % 2 === 0 ? { value } : { issues: [{ message: "Expected an even number" }] },
     );
 
-    const result = await siftAsync([2, 3, 4], evenAsync);
+    const result = await guardAsync([2, 3, 4], evenAsync);
 
     expect(result.valid).toEqual([2, 4]);
     expect(result.invalid).toEqual([{ index: 1, value: 3, issues: [{ message: "Expected an even number" }] }]);
@@ -125,14 +125,14 @@ describe("siftAsync", () => {
       return { value: value as number };
     });
 
-    const result = await siftAsync([1, 2], rejectsOnTwo);
+    const result = await guardAsync([1, 2], rejectsOnTwo);
 
     expect(result.valid).toEqual([1]);
     expect(result.invalid).toEqual([{ index: 1, value: 2, issues: [{ message: "Validator threw: lookup failed" }] }]);
   });
 
   it("works with plain type guards too", async () => {
-    expect(await siftAsync([ada, "x"], isUser)).toEqual({
+    expect(await guardAsync([ada, "x"], isUser)).toEqual({
       valid: [ada],
       invalid: [{ index: 1, value: "x", issues: [{ message: "Rejected by isUser" }] }],
     });

@@ -1,7 +1,7 @@
 // The Standard Schema interface (https://standardschema.dev), copied as the
-// spec recommends so recordsift has no runtime dependencies. Zod, Valibot,
+// spec recommends so RecordGuard has no runtime dependencies. Zod, Valibot,
 // ArkType and other validators implement it, so any of their schemas can be
-// passed straight to sift().
+// passed straight to guard().
 
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
   readonly "~standard": StandardSchemaV1.Props<Input, Output>;

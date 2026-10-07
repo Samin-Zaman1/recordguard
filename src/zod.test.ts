@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { loadAndSift, sift, siftAsync } from "./index.js";
+import { loadAndGuard, guard, guardAsync } from "./index.js";
 
 // Interop check: a real Zod schema goes straight in, no adapter needed.
 const User = z.object({
@@ -12,12 +12,12 @@ type User = z.output<typeof User>;
 
 describe("Zod interop", () => {
   it("infers the valid type from the schema", () => {
-    const { valid } = sift([], User);
+    const { valid } = guard([], User);
     expectTypeOf(valid).toEqualTypeOf<User[]>();
   });
 
   it("splits records and reports Zod's issues with their paths", () => {
-    const result = sift(
+    const result = guard(
       [
         { id: 1, email: "ada@example.com", role: "admin" },
         { id: 2, email: "not-an-email", role: "admin" },
@@ -32,12 +32,12 @@ describe("Zod interop", () => {
   });
 
   it("applies Zod defaults to valid records", () => {
-    expect(sift([{ id: 3, email: "grace@example.com" }], User).valid).toEqual([
+    expect(guard([{ id: 3, email: "grace@example.com" }], User).valid).toEqual([
       { id: 3, email: "grace@example.com", role: "customer" },
     ]);
   });
 
-  it("handles async refinements through siftAsync and loadAndSift", async () => {
+  it("handles async refinements through guardAsync and loadAndGuard", async () => {
     const taken = new Set(["taken@example.com"]);
     const SignUp = z.object({ email: z.email() }).refine(async ({ email }) => !taken.has(email), {
       message: "Email already registered",
@@ -45,12 +45,12 @@ describe("Zod interop", () => {
     });
     const records = [{ email: "new@example.com" }, { email: "taken@example.com" }];
 
-    expect(() => sift(records, SignUp)).toThrow(TypeError);
+    expect(() => guard(records, SignUp)).toThrow(TypeError);
 
-    const result = await siftAsync(records, SignUp);
+    const result = await guardAsync(records, SignUp);
     expect(result.valid).toEqual([{ email: "new@example.com" }]);
     expect(result.invalid[0]?.issues).toEqual([{ message: "Email already registered", path: ["email"] }]);
 
-    expect(await loadAndSift({ load: async () => records, validate: SignUp })).toEqual(result);
+    expect(await loadAndGuard({ load: async () => records, validate: SignUp })).toEqual(result);
   });
 });

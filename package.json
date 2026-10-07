@@ -1,5 +1,5 @@
 {
-  "name": "recordsift",
+  "name": "recordguard",
   "version": "0.1.0",
   "description": "Load data from an API with retries and validate every record at runtime. Returns { valid, invalid } instead of crashing on bad records. Works with type guards, Zod, Valibot and ArkType.",
   "keywords": [
@@ -19,10 +19,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Samin-Zaman1/recordsift.git"
+    "url": "git+https://github.com/Samin-Zaman1/recordguard.git"
   },
-  "homepage": "https://github.com/Samin-Zaman1/recordsift#readme",
-  "bugs": "https://github.com/Samin-Zaman1/recordsift/issues",
+  "homepage": "https://github.com/Samin-Zaman1/recordguard#readme",
+  "bugs": "https://github.com/Samin-Zaman1/recordguard/issues",
   "type": "module",
   "exports": {
     ".": {
