@@ -3,13 +3,13 @@ import type { StandardSchemaV1 } from "./standard-schema.js";
 // A type guard: returns true when the value is a T, and TypeScript narrows it.
 export type TypeGuard<T> = (value: unknown) => value is T;
 
-// Anything recordsift can validate with: a hand-written type guard, or a
+// Anything RecordGuard can validate with: a hand-written type guard, or a
 // Standard Schema (Zod, Valibot, ArkType, ...).
 export type Validator<T> = TypeGuard<T> | StandardSchemaV1<unknown, T>;
 
 // Why a record was rejected. Schema issues are passed through with their
 // paths flattened to plain keys, e.g. { message: "Invalid email", path: ["email"] }.
-export interface SiftIssue {
+export interface GuardIssue {
   readonly message: string;
   readonly path?: readonly PropertyKey[];
 }
@@ -19,10 +19,10 @@ export interface SiftIssue {
 export interface InvalidRecord {
   readonly index: number;
   readonly value: unknown;
-  readonly issues: readonly SiftIssue[];
+  readonly issues: readonly GuardIssue[];
 }
 
-export interface SiftResult<T> {
+export interface GuardResult<T> {
   readonly valid: T[];
   readonly invalid: InvalidRecord[];
 }

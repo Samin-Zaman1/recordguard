@@ -1,11 +1,11 @@
 // Run with: npm run example
 //
 // Loads users from a flaky "API" that fails twice before answering, and whose
-// answer contains some bad records. recordsift retries the load, keeps the
+// answer contains some bad records. RecordGuard retries the load, keeps the
 // good users, and reports exactly what was wrong with the rest.
 
 import { z } from "zod";
-import { loadAndSift } from "../src/index.js";
+import { loadAndGuard } from "../src/index.js";
 
 const User = z.object({
   id: z.number().int(),
@@ -25,7 +25,7 @@ async function fetchUsers(): Promise<unknown> {
   ];
 }
 
-const { valid, invalid } = await loadAndSift({
+const { valid, invalid } = await loadAndGuard({
   load: fetchUsers,
   validate: User,
   attempts: 3,

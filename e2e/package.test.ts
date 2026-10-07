@@ -41,7 +41,7 @@ let consumerDir: string;
 let packedFiles: string[];
 
 beforeAll(async () => {
-  workDir = await mkdtemp(join(tmpdir(), "recordsift-e2e-"));
+  workDir = await mkdtemp(join(tmpdir(), "recordguard-e2e-"));
   consumerDir = join(workDir, "consumer");
 
   await npm(["run", "build"], repo);
@@ -101,7 +101,7 @@ describe("installed package, used from JavaScript", () => {
 
     await writeFile(
       join(consumerDir, "consumer.mjs"),
-      `import { loadAndSift } from "recordsift";
+      `import { loadAndGuard } from "recordguard";
 
 const isUser = (v) => typeof v === "object" && v !== null && Number.isInteger(v.id) && typeof v.email === "string";
 
@@ -112,7 +112,7 @@ const load = async () => {
 };
 
 try {
-  const { valid, invalid } = await loadAndSift({ load, validate: isUser, delayMs: 10 });
+  const { valid, invalid } = await loadAndGuard({ load, validate: isUser, delayMs: 10 });
   console.log(JSON.stringify({ valid, invalid }));
 } catch (error) {
   console.log(JSON.stringify({ error: error.name + ": " + error.message }));
@@ -127,13 +127,13 @@ try {
 
   it("exposes the public API", async () => {
     const out = await node(
-      ["--input-type=module", "-e", 'import * as m from "recordsift"; console.log(Object.keys(m).sort().join(","))'],
+      ["--input-type=module", "-e", 'import * as m from "recordguard"; console.log(Object.keys(m).sort().join(","))'],
       consumerDir,
     );
-    expect(out.trim()).toBe("loadAndSift,retry,sift,siftAsync");
+    expect(out.trim()).toBe("guard,guardAsync,loadAndGuard,retry");
   });
 
-  it("retries a failing API over real HTTP, then sifts the records", async () => {
+  it("retries a failing API over real HTTP, then checks the records", async () => {
     const out = JSON.parse(await node(["consumer.mjs", `${baseUrl}/users`], consumerDir));
 
     expect(requests).toBe(2);
@@ -156,12 +156,12 @@ describe("installed package, used from TypeScript", () => {
     const expectError = "// @ts-" + "expect-error";
     await writeFile(
       join(consumerDir, "consumer.ts"),
-      `import { sift, type SiftResult } from "recordsift";
+      `import { guard, type GuardResult } from "recordguard";
 
 interface User { id: number; email: string }
 const isUser = (v: unknown): v is User => typeof v === "object" && v !== null && "id" in v;
 
-const result: SiftResult<User> = sift([{ id: 1, email: "a@b.co" }], isUser);
+const result: GuardResult<User> = guard([{ id: 1, email: "a@b.co" }], isUser);
 const first: User | undefined = result.valid[0];
 const reasons: string[] = result.invalid.flatMap((r) => r.issues.map((i) => i.message));
 
