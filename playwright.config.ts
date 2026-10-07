@@ -6,6 +6,7 @@ export default defineConfig({
   reporter: "list",        // simple one-line-per-test output
   use: {
     headless: true,        // run the browser without a visible window
-    trace: "on-first-retry", // record a debug trace when a retry happens (used later)
+    trace: "retain-on-failure",   // keep a debug trace for failed tests (uploaded by CI)
+    screenshot: "only-on-failure", // capture the page when a test fails
   },
 });

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Samin-Zaman1/typescript-testing-fundamentals/actions/workflows/ci.yml/badge.svg)](https://github.com/Samin-Zaman1/typescript-testing-fundamentals/actions/workflows/ci.yml)
 
-A small TypeScript codebase written test-first with [Vitest](https://vitest.dev): generic utilities, runtime validation of untrusted data, and a user service with retry logic. CI on GitHub Actions enforces 90% coverage, and `main` only accepts changes through pull requests that pass it.
+A small TypeScript codebase written test-first with [Vitest](https://vitest.dev): generic utilities, runtime validation of untrusted data, and a user service with retry logic, plus a [Playwright](https://playwright.dev) browser test. CI on GitHub Actions enforces 90% coverage, and `main` only accepts changes through pull requests that pass it.
 
 ## What's here
 
@@ -12,7 +12,7 @@ A small TypeScript codebase written test-first with [Vitest](https://vitest.dev)
 | `src/validate.ts` | `isUser` type guard that checks an `unknown` value is a real `User` | valid users, wrong types, missing fields, roles outside the allowed set |
 | `src/userService.ts` | `UserService` loads users through an injected fetch function, retries failures, and separates valid from invalid records | mixed good and bad records, a failure followed by success, every attempt failing, an empty response, grouping by role |
 
-29 tests across 3 files.
+29 unit tests across 3 files, plus an end-to-end test in `e2e/todo.spec.ts` that drives a real browser through the [TodoMVC demo app](https://demo.playwright.dev/todomvc). Playwright only looks in `e2e/` and Vitest only in `src/`, so neither runner picks up the other's tests.
 
 ## Testing approach
 
@@ -25,15 +25,19 @@ A small TypeScript codebase written test-first with [Vitest](https://vitest.dev)
 
 ## CI and workflow
 
-- `.github/workflows/ci.yml` runs the test suite with coverage on every pull request and every push to `main`, and uploads the HTML coverage report as an artifact.
-- A repository ruleset on `main` requires a pull request and a passing `test` check, and blocks force pushes and deletion. A pull request with a failing test cannot be merged.
+- `.github/workflows/ci.yml` runs two jobs in parallel on every pull request and every push to `main`:
+  - `test` runs the unit tests with coverage and uploads the HTML coverage report as an artifact.
+  - `e2e` installs Chromium and runs the Playwright tests, uploading traces and screenshots if a test fails.
+- A repository ruleset on `main` requires a pull request with passing `test` and `e2e` checks, and blocks force pushes and deletion. A pull request with a failing test cannot be merged.
 
 ## Run locally
 
 ```bash
 npm ci
-npm test            # run the tests
-npm run coverage    # run with coverage and enforce the thresholds
+npm test                        # run the unit tests
+npm run coverage                # run with coverage and enforce the thresholds
+npx playwright install chromium # one-time browser download
+npm run e2e                     # run the end-to-end tests
 ```
 
 Requires Node 22 or later.
